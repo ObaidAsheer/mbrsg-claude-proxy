@@ -146,7 +146,6 @@
   <div class="card">
     <div class="card-title">⚙ Test Configuration</div>
     <div class="controls">
-      <input class="key-input" type="password" id="api-key" placeholder="Paste your Anthropic API key (sk-ant-api03-...)" autocomplete="off"/>
       <div class="select-wrap">
         <select id="concurrency">
           <option value="sequential">Sequential</option>
@@ -316,7 +315,7 @@ function updateBars() {
   });
 }
 
-async function callAPI(key, model, prompt) {
+async function callAPI(model, prompt) {
   const t0 = Date.now();
   const r = await fetch('https://mbrsg-claude-proxy-production.up.railway.app', {
     method: 'POST',
@@ -328,7 +327,7 @@ async function callAPI(key, model, prompt) {
   return { data, ms };
 }
 
-async function runUser(key, ui, delay) {
+async function runUser(ui, delay) {
   const u = USERS[ui];
   const email = EMAILS[ui];
   setUser(ui, 'Starting...', 'active');
@@ -369,8 +368,6 @@ async function runUser(key, ui, delay) {
 }
 
 async function runTest() {
-  const key = document.getElementById('api-key').value.trim();
-  if (!key.startsWith('sk-ant')) { alert('Please enter a valid Anthropic API key (starts with sk-ant)'); return; }
   if (state.running) return;
 
   state = { running:true, calls:0, tokens:0, cost:0, time:0, success:0, errors:0, actionTimes:[[],[],[],[],[]], startTime:Date.now(), timerInterval:null };
@@ -392,9 +389,9 @@ async function runTest() {
   const concurrent = document.getElementById('concurrency').value === 'concurrent';
 
   if (concurrent) {
-    await Promise.all(USERS.map((_,i) => runUser(key, i, delay)));
+    await Promise.all(USERS.map((_,i) => runUser(i, delay)));
   } else {
-    for (let i = 0; i < USERS.length; i++) await runUser(key, i, delay);
+    for (let i = 0; i < USERS.length; i++) await runUser(i, delay);
   }
 
   clearInterval(state.timerInterval);
