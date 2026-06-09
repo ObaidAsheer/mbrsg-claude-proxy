@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBRSG AI Portal</title>
+<style>
+:root {
+  --navy: #002f6d;
+  --navy-dark: #001f4a;
+  --navy-light: #e6edf7;
+  --grey: #a8a8aa;
+  --grey-light: #f5f5f6;
+  --border: #dde3ed;
+  --text: #1a1a2e;
+  --muted: #5a6a7e;
+  --surface: #ffffff;
+  --green: #2e7d32;
+  --green-light: #e8f5e9;
+  --red: #c62828;
+  --red-light: #ffebee;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  background: var(--grey-light);
+  color: var(--text);
+  font-size: 14px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background: var(--navy);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-logo {
+  width: 42px; height: 42px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+.header-text { flex: 1; }
+.header-title { font-size: 15px; font-weight: 600; color: white; }
+.header-sub { font-size: 11px; color: var(--grey); margin-top: 1px; }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-badge {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.8);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+/* Nav tabs */
+.nav {
+  background: var(--navy-dark);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  padding: 0 24px;
+  gap: 2px;
+}
+.nav-tab {
+  padding: 10px 18px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.nav-tab:hover { color: white; }
+.nav-tab.active { color: white; border-bottom-color: white; }
+
+/* Main layout */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  flex: 1;
+  width: 100%;
+}
+
+/* Panels */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Chat interface */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  height: calc(100vh - 160px);
+}
+
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sidebar-card-title {
+  padding: 10px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--grey-light);
+}
+
+.quick-action {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+}
+.quick-action:last-child { border-bottom: none; }
+.quick-action:hover { background: var(--navy-light); color: var(--navy); }
+.quick-action-icon { font-size: 14px; flex-shrink: 0; }
+
+/* Chat window */
+.chat-window {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 85%;
+}
+
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.msg.assistant .msg-avatar { background: var(--navy); color: white; font-size: 11px; }
+.msg.user .msg-avatar { background: var(--grey-light); color: var(--navy); border: 1px solid var(--border); }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.msg.assistant .msg-bubble {
+  background: var(--grey-light);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-top-left-radius: 4px;
+}
+
+.msg.user .msg-bubble {
+  background: var(--navy);
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.msg-bubble pre {
+  background: rgba(0,0,0,0.06);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+}
+
+.msg.user .msg-bubble pre { background: rgba(255,255,255,0.15); }
+
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.msg.user .msg-time { text-align: right; }
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 10px 14px;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--grey);
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+.chat-input-area {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--grey-light);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 42px;
+  max-height: 120px;
+  background: white;
+  color: var(--text);
+  transition: border-color 0.15s;
+  line-height: 1.5;
+}
+.chat-input:focus { border-color: var(--navy); }
+
+.send-btn {
+  padding: 10px 18px;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  height: 42px;
+}
+.send-btn:hover { opacity: 0.88; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Announcements */
+.announcements-grid { display: flex; flex-direction: column; gap: 14px; }
+
+.announcement-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  border-left: 4px solid var(--navy);
+}
+
+.announcement-card.it { border-left-color: #0078d4; }
+.announcement-card.hr { border-left-color: #107c10; }
+.announcement-card.general { border-left-color: var(--grey); }
+
+.ann-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ann-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.ann-category.it { background: #e3f2fd; color: #0078d4; }
+.ann-category.hr { background: #e8f5e9; color: #107c10; }
+.ann-category.general { background: var(--grey-light); color: var(--muted); }
+.ann-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+.ann-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.ann-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Directory */
+.directory-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.dir-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+}
+.dir-search-input:focus { border-color: var(--navy); }
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dir-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dir-card:hover { border-color: var(--navy); background: var(--navy-light); }
+
+.dir-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dir-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.dir-title { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+/* Procedures */
+.procedures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+.proc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.proc-card:hover { border-color: var(--navy); background: var(--navy-light); }
+.proc-icon { font-size: 22px; flex-shrink: 0; }
+.proc-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.proc-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* Loading */
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Welcome banner */
+.welcome-banner {
+  background: var(--navy);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.welcome-text h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.welcome-text p { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+@media (max-width: 768px) {
+  .chat-layout { grid-template-columns: 1fr; height: auto; }
+  .chat-window { height: 60vh; }
+  .chat-sidebar { display: none; }
+  .main { padding: 14px; }
+  .directory-grid { grid-template-columns: 1fr; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+</head>
+<body>
+
+<!-- Header -->
+
+<!-- SSO Login Screen -->
+<div id="sso-screen" style="
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #f5f5f6; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Segoe UI, Tahoma, Arial, sans-serif;
+">
+  <div style="
+    background: white; border-radius: 12px; padding: 40px;
+    width: 380px; box-shadow: 0 8px 32px rgba(0,47,109,0.12);
+    text-align: center; border: 1px solid #dde3ed;
+  ">
+    <div style="
+      width: 60px; height: 60px; background: #002f6d;
+      border-radius: 10px; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+    ">
+      <img src="data:image/png;base64,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" alt="MBRSG" style="width:40px;height:40px;object-fit:contain;"/>
+    </div>
+    <div style="font-size: 20px; font-weight: 600; color: #002f6d; margin-bottom: 6px;">MBRSG AI Portal</div>
+    <div style="font-size: 13px; color: #a8a8aa; margin-bottom: 28px;">Mohammed Bin Rashid School of Government</div>
+    <button id="sso-btn" onclick="signIn()" style="
+      width: 100%; padding: 12px;
+      background: #002f6d; color: white;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.15s;
+    ">
+      <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+        <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+        <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+        <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+      </svg>
+      Sign in with Microsoft
+    </button>
+    <div id="sso-error" style="margin-top: 14px; font-size: 12px; color: #c62828; display: none;"></div>
+    <div style="margin-top: 20px; font-size: 11px; color: #a8a8aa;">
+      Use your MBRSG Microsoft account<br>(@mbrsg.ac.ae)
+    </div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <img src="data:image/png;base64,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" alt="MBRSG" style="width:100%;height:100%;object-fit:contain;"/>
+    </div>
+    <div class="header-text">
+      <div class="header-title">MBRSG AI Portal</div>
+      <div class="header-sub">Mohammed Bin Rashid School of Government · Internal Employee Portal</div>
+    </div>
+    <div class="header-right">
+      <div class="header-badge" id="status-badge">● Connected</div>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-tab active" onclick="switchTab('chat', this)">💬 AI Assistant</div>
+    <div class="nav-tab" onclick="switchTab('procedures', this)">📋 Procedures</div>
+    <div class="nav-tab" onclick="switchTab('directory', this)">👥 Directory</div>
+    <div class="nav-tab" onclick="switchTab('announcements', this)">📢 Announcements</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- CHAT PANEL -->
+  <div class="panel active" id="panel-chat">
+    <div class="chat-layout">
+
+      <!-- Sidebar -->
+      <div class="chat-sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Quick actions</div>
+          <div class="quick-action" onclick="sendQuick('Write me a professional email to Sara Bin Jarsh (HR Manager) requesting annual leave for next week.')">
+            <span class="quick-action-icon">✉</span>Email to HR Manager
+          </div>
+          <div class="quick-action" onclick="sendQuick('What are the steps to submit a purchase requisition in GRP?')">
+            <span class="quick-action-icon">📋</span>GRP Requisition steps
+          </div>
+          <div class="quick-action" onclick="sendQuick('How do I raise an IT support ticket?')">
+            <span class="quick-action-icon">🖥</span>Raise IT ticket
+          </div>
+          <div class="quick-action" onclick="sendQuick('What is the process for applying for annual leave?')">
+            <span class="quick-action-icon">📅</span>Apply for annual leave
+          </div>
+          <div class="quick-action" onclick="sendQuick('Write a professional email to Esam Mohammed Dukhan (Senior Financial Controller) about a budget inquiry.')">
+            <span class="quick-action-icon">💰</span>Email to Finance
+          </div>
+          <div class="quick-action" onclick="sendQuick('What are the steps to request a new laptop or IT equipment?')">
+            <span class="quick-action-icon">💻</span>Request IT equipment
+          </div>
+          <div class="quick-action" onclick="sendQuick('How do I submit a travel request or expense claim?')">
+            <span class="quick-action-icon">✈</span>Travel & expenses
+          </div>
+          <div class="quick-action" onclick="sendQuick('What is the procurement process for vendors at MBRSG?')">
+            <span class="quick-action-icon">🏢</span>Procurement process
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Key contacts</div>
+          <div class="quick-action" onclick="sendQuick('Who is the HR Manager at MBRSG and what can I contact them for?')">
+            <span class="quick-action-icon">👩</span>HR Manager
+          </div>
+          <div class="quick-action" onclick="sendQuick('Who handles IT support and how do I contact them?')">
+            <span class="quick-action-icon">🔧</span>IT Support
+          </div>
+          <div class="quick-action" onclick="sendQuick('Who is the Director of Legal Affairs at MBRSG?')">
+            <span class="quick-action-icon">⚖</span>Legal Affairs
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat window -->
+      <div class="chat-window">
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg assistant">
+            <div class="msg-avatar">AI</div>
+            <div>
+              <div class="msg-bubble">
+                Hello! I'm your MBRSG AI assistant. I can help you with:<br><br>
+                • <strong>Draft emails</strong> — just say who you want to write to<br>
+                • <strong>Internal procedures</strong> — GRP, HR, IT, Finance processes<br>
+                • <strong>Staff directory</strong> — find anyone at MBRSG<br>
+                • <strong>Research</strong> — any topic or question<br><br>
+                What can I help you with today?
+              </div>
+              <div class="msg-time">Now</div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask anything — e.g. 'Write an email to the IT Manager' or 'How do I apply for leave?'" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCEDURES PANEL -->
+  <div class="panel" id="panel-procedures">
+    <div class="welcome-banner">
+      <div style="font-size:28px">📋</div>
+      <div class="welcome-text">
+        <h2>Internal Procedures</h2>
+        <p>Step-by-step guides for common MBRSG processes. Click any procedure to get AI-guided instructions.</p>
+      </div>
+    </div>
+    <div class="procedures-grid">
+      <div class="proc-card" onclick="goToChat('What are the exact steps to submit a purchase requisition in the GRP system at MBRSG?')">
+        <div class="proc-icon">🛒</div>
+        <div><div class="proc-name">GRP Purchase Requisition</div><div class="proc-desc">How to submit a purchase request through the GRP system</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to apply for annual leave at MBRSG? Include all steps and who to notify.')">
+        <div class="proc-icon">📅</div>
+        <div><div class="proc-name">Annual Leave Application</div><div class="proc-desc">Steps to apply for and get annual leave approved</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I raise an IT support ticket at MBRSG? What information do I need and who handles it?')">
+        <div class="proc-icon">🖥</div>
+        <div><div class="proc-name">IT Support Ticket</div><div class="proc-desc">Raise and track IT support requests</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to request new IT equipment such as a laptop, monitor, or phone at MBRSG?')">
+        <div class="proc-icon">💻</div>
+        <div><div class="proc-name">IT Equipment Request</div><div class="proc-desc">Request new or replacement IT equipment</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the travel request and expense claim process at MBRSG? How do I get reimbursed?')">
+        <div class="proc-icon">✈</div>
+        <div><div class="proc-name">Travel & Expense Claim</div><div class="proc-desc">Submit travel requests and claim expenses</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the vendor registration and procurement process at MBRSG? How do we onboard a new vendor?')">
+        <div class="proc-icon">🏢</div>
+        <div><div class="proc-name">Vendor Registration</div><div class="proc-desc">Onboard and register a new vendor or supplier</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I request a new user account or system access at MBRSG? What is the approval process?')">
+        <div class="proc-icon">🔑</div>
+        <div><div class="proc-name">System Access Request</div><div class="proc-desc">Request access to MBRSG systems and applications</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the performance appraisal process at MBRSG? When does it happen and what are the steps?')">
+        <div class="proc-icon">⭐</div>
+        <div><div class="proc-name">Performance Appraisal</div><div class="proc-desc">Understand the appraisal cycle and process</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I book a meeting room at MBRSG? What is the process and who do I contact?')">
+        <div class="proc-icon">🏛</div>
+        <div><div class="proc-name">Meeting Room Booking</div><div class="proc-desc">Reserve meeting rooms and facilities</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to onboard a new employee at MBRSG? What does IT need to set up?')">
+        <div class="proc-icon">👋</div>
+        <div><div class="proc-name">New Employee Onboarding</div><div class="proc-desc">Steps to onboard and set up a new joiner</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I request a VPN or remote access at MBRSG?')">
+        <div class="proc-icon">🔒</div>
+        <div><div class="proc-name">VPN & Remote Access</div><div class="proc-desc">Request and set up remote access</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to publish an announcement or communication to all MBRSG staff?')">
+        <div class="proc-icon">📢</div>
+        <div><div class="proc-name">Staff Announcement</div><div class="proc-desc">How to send an official communication to staff</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTORY PANEL -->
+  <div class="panel" id="panel-directory">
+    <div class="welcome-banner">
+      <div style="font-size:28px">👥</div>
+      <div class="welcome-text">
+        <h2>Staff Directory</h2>
+        <p>Click any colleague to draft an email to them using AI.</p>
+      </div>
+    </div>
+    <div class="directory-search">
+      <input class="dir-search-input" type="text" placeholder="Search by name or role..." oninput="filterDirectory(this.value)" />
+    </div>
+    <div class="directory-grid" id="directory-grid"></div>
+  </div>
+
+  <!-- ANNOUNCEMENTS PANEL -->
+  <div class="panel" id="panel-announcements">
+    <div class="welcome-banner">
+      <div style="font-size:28px">📢</div>
+      <div class="welcome-text">
+        <h2>Announcements</h2>
+        <p>Latest IT and HR updates from MBRSG.</p>
+      </div>
+    </div>
+    <div class="announcements-grid">
+      <div class="announcement-card it">
+        <div class="ann-header">
+          <span class="ann-category it">IT</span>
+          <span class="ann-date">13 May 2026</span>
+        </div>
+        <div class="ann-title">MBRSG AI Portal — Now Live</div>
+        <div class="ann-body">The MBRSG AI Employee Portal is now available to all staff. Use it to draft emails, look up procedures, find colleagues, and get instant answers to internal questions. Access via your browser — no installation required. For support contact the IT helpdesk.</div>
+      </div>
+      <div class="announcement-card it">
+        <div class="ann-header">
+          <span class="ann-category it">IT</span>
+          <span class="ann-date">10 May 2026</span>
+        </div>
+        <div class="ann-title">Microsoft 365 Maintenance — Completed</div>
+        <div class="ann-body">The scheduled Microsoft 365 maintenance has been completed successfully. All services including Outlook, Teams, SharePoint and OneDrive are fully operational. If you experience any issues please raise an IT ticket.</div>
+      </div>
+      <div class="announcement-card hr">
+        <div class="ann-header">
+          <span class="ann-category hr">HR</span>
+          <span class="ann-date">8 May 2026</span>
+        </div>
+        <div class="ann-title">Annual Leave — Eid Al Adha 2026</div>
+        <div class="ann-body">Please be informed that the official Eid Al Adha holiday will be announced by the UAE government. Employees are requested to submit any planned leave requests through the system at least 5 working days in advance. Contact HR for further details.</div>
+      </div>
+      <div class="announcement-card hr">
+        <div class="ann-header">
+          <span class="ann-category hr">HR</span>
+          <span class="ann-date">5 May 2026</span>
+        </div>
+        <div class="ann-title">Q2 Performance Review — Starting Soon</div>
+        <div class="ann-body">Q2 performance reviews will commence shortly. All managers are required to complete evaluations through the HR system. Employees should update their KPIs and self-assessment forms. Contact Sara Bin Jarsh in HR for any questions.</div>
+      </div>
+      <div class="announcement-card general">
+        <div class="ann-header">
+          <span class="ann-category general">General</span>
+          <span class="ann-date">1 May 2026</span>
+        </div>
+        <div class="ann-title">CrowdStrike EDR — Deployed on All Devices</div>
+        <div class="ann-body">The IT department has successfully deployed CrowdStrike Falcon EDR on all MBRSG devices as part of our security fabric enhancement. No action is required from employees. If you notice the Falcon icon on your device, this is expected.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PROXY_URL = 'https://mbrsg-claude-proxy-production.up.railway.app';
+
+const EMPLOYEES = [
+  {name:"Mohammed Hassan Elkhatib", title:"Senior Director of Support Services"},
+  {name:"Houreya Ahmed Almarzooqi", title:"Manager – Executive President Office"},
+  {name:"Ali Bin Seba Almarri", title:"Professor of Health Policy and Systems Research"},
+  {name:"Aisha Ibrahim Al Ali", title:"Academic Development Office Director"},
+  {name:"Yusra Sufian Alagha", title:"Admissions and Program Relations Manager"},
+  {name:"Shuaib Kunnoth Kunnummal", title:"Programmer"},
+  {name:"Khalid Essa Almarri", title:"Senior Director of Institutional Effectiveness"},
+  {name:"Hayathem Mohammed Shukri", title:"Student & Alumni Affairs Manager"},
+  {name:"Kieran James Ross", title:"Registrar"},
+  {name:"Mona Mostafa Elsholkamy", title:"Associate Professor of Macroeconomic Policies"},
+  {name:"Lama Saleem Zakzak", title:"Principal Researcher"},
+  {name:"Marwah Mohamed Alantali", title:"Senior Manager - Data and Impact Measurement"},
+  {name:"Anthony Alba Bartolo", title:"IT Administrator"},
+  {name:"Salman Mehdi Amin", title:"Chief Accountant"},
+  {name:"Roqaya Abbas Faramarzy", title:"Human Resources Officer"},
+  {name:"Ahmed Maher Abu Amarah", title:"Senior Accountant"},
+  {name:"Eiman Ali Almarzooqi", title:"Research Faculty Senior Manager"},
+  {name:"Bryan Teofil Cuenca", title:"IT Technician"},
+  {name:"Maha Mohammad Abdulqader", title:"Planning & Project Manager"},
+  {name:"Yousif El-Ghalayini", title:"Professor - Acting Dean"},
+  {name:"Melodena Stephens Alfred", title:"Professor"},
+  {name:"Ali Hamad Alhuraiz", title:"Senior Administrative Affairs Manager"},
+  {name:"Arthur Seakhoa King", title:"Director of Academic Affairs"},
+  {name:"Fadi Mohamed Salem", title:"Director of Research & Advisory"},
+  {name:"Marwah Ali Almaamari", title:"Senior Executive Education Officer"},
+  {name:"Yousuf Mohammad Ramadhan", title:"Sr. Manager, Programs Development"},
+  {name:"Maryam Essa Alblooshi", title:"Library & Educational Technologies Officer"},
+  {name:"Rawdha Hilal Al Aamri", title:"Senior Administrative Officer – Alumni"},
+  {name:"Sara Mohammad Bin Jarsh", title:"HR Manager"},
+  {name:"Lulwa Yousuf Abdulla", title:"Senior Business Development Officer"},
+  {name:"Obaid Hasan Asheer", title:"IT Manager"},
+  {name:"Mounia Drissi", title:"Assistant Professor"},
+  {name:"Khalid Wassef Al Wazani", title:"Professor of Economics & Public Policy"},
+  {name:"Fatma Saif Almheiri", title:"Senior Corporate Communications Officer"},
+  {name:"Fatma Jassem Almarri", title:"Senior Administrator Officer"},
+  {name:"Shamsa Mohammad Ali", title:"Administrative Officer"},
+  {name:"Yousra Hamid Albarwani", title:"Registration Officer"},
+  {name:"Salama Jassim Bin Kalban", title:"Coordinator"},
+  {name:"Almaha Juma Alfalasi", title:"Executive Education Programs Officer"},
+  {name:"Fatima Eisa Alblooshi", title:"Executive Education Programs Officer"},
+  {name:"Hamid Saeed Younas", title:"Library & Educational Technologies Manager"},
+  {name:"Shamsa Saif Alremeithi", title:"Senior Public Relation Officer"},
+  {name:"Aisha Abdulla Alali", title:"Excellence & Quality Manager"},
+  {name:"Akmaral Orazaly", title:"Principal Researcher"},
+  {name:"Latifa Darwish Mohammed", title:"Customized Programs Manager"},
+  {name:"Hanan Hassan Darwish", title:"Senior Human Resource Officer"},
+  {name:"Saeed Musallam Al Amri", title:"Assistant Researcher"},
+  {name:"Shaima Ibrahim Taher", title:"Executive Education Officer"},
+  {name:"Shamma Adel Alkhumais", title:"Senior Graphic Designer"},
+  {name:"Shaikha Ahmed Alrahoomi", title:"Director of Executive Education"},
+  {name:"Gir Bahadur Aryal", title:"Admin Affairs Administrator"},
+  {name:"Amani Mohammed", title:"Executive Education Specialist"},
+  {name:"Keerthi Krishnan", title:"Accountant"},
+  {name:"Alaa Ahmed Raslan", title:"Senior Performance and Process Analyst"},
+  {name:"Yasmine Abosarry", title:"Receptionist"},
+  {name:"Masood Abdulla Helal", title:"Public Relations Officer"},
+  {name:"Esam Mohammed Dukhan", title:"Senior Financial Controller"},
+  {name:"Racha Walid Sleiman", title:"Director of Legal Affairs"},
+  {name:"Saleha Juma BuKattara", title:"Director of Corporate Communications"},
+];
+
+const SYSTEM_PROMPT = `You are the MBRSG AI Assistant — an internal AI portal for employees of Mohammed Bin Rashid School of Government (MBRSG) in Dubai, UAE. Location: AlSafa Rd, City Walk, Building B02, First Floor, Dubai.
+
+=== STAFF DIRECTORY ===
+- Obaid Hasan Asheer: IT Manager | obaid.asheer@mbrsg.ac.ae | +9714-3175652 | +971559491888
+- Anthony Alba Bartolo: IT Administrator | anthony.bartolo@mbrsg.ac.ae | +9714-3175651 | +971554213900
+- Bryan Teofil Cuenca: IT Technician | bryan.cuenca@mbrsg.ac.ae | +9714-3175605
+- Emmanuel: Outsourced IT Technician (service contract)
+- Sara Mohammad Bin Jarsh: HR Manager | sara.binjarsh@mbrsg.ac.ae
+- Hanan Hassan Darwish: Senior Human Resource Officer | hanan.darwish@mbrsg.ac.ae
+- Roqaya Abbas Faramarzy: Human Resources Officer | roqaya.faramarzy@mbrsg.ac.ae
+- Esam Mohammed Dukhan: Senior Financial Controller | esam.dukhan@mbrsg.ac.ae
+- Salman Mehdi Amin: Chief Accountant | salman.amin@mbrsg.ac.ae
+- Keerthi Krishnan: Accountant | keerthi.krishnan@mbrsg.ac.ae
+- Ahmed Maher Abu Amarah: Senior Accountant | ahmed.abuamarah@mbrsg.ac.ae
+- Racha Walid Sleiman: Director of Legal Affairs | racha.sleiman@mbrsg.ac.ae
+- Saleha Juma BuKattara: Director of Corporate Communications | saleha.bukattara@mbrsg.ac.ae
+- Fatma Saif Almheiri: Senior Corporate Communications Officer | fatma.almheiri@mbrsg.ac.ae
+- Shamsa Saif Alremeithi: Senior Public Relation Officer
+- Masood Abdulla Helal: Public Relations Officer | masood.helal@mbrsg.ac.ae
+- Yousif El-Ghalayini: Professor - Acting Dean | yousif.el-ghalayini@mbrsg.ac.ae
+- Arthur Seakhoa King: Director of Academic Affairs | arthur.king@mbrsg.ac.ae
+- Kieran James Ross: Registrar | kieran.ross@mbrsg.ac.ae | +9714-3175612
+- Yousra Hamid Albarwani: Registration Officer | yousra.hamid@mbrsg.ac.ae
+- Hamid Saeed Younas: Library & Educational Technologies Manager | hamid.saeed@mbrsg.ac.ae | +9714-3175615
+- Maryam Essa Alblooshi: Library & Educational Technologies Officer | maryam.alblooshi@mbrsg.ac.ae
+- Khalid Essa Almarri: Senior Director of Institutional Effectiveness | khalid.almarri@mbrsg.ac.ae
+- Maha Mohammad Abdulqader: Planning & Project Manager | maha.abdulqader@mbrsg.ac.ae
+- Eiman Ali Almarzooqi: Research Faculty Senior Manager | eiman.almarzooqi@mbrsg.ac.ae
+- Fadi Mohamed Salem: Director of Research & Advisory | fadi.salem@mbrsg.ac.ae
+- Mohammed Hassan Elkhatib: Senior Director of Support Services
+- Houreya Ahmed Almarzooqi: Manager – Executive President Office
+- Shaikha Ahmed Alrahoomi: Director of Executive Education
+- Latifa Darwish Mohammed: Customized Programs Manager
+- Hayathem Mohammed Shukri: Student & Alumni Affairs Manager | hayathem.shukri@mbrsg.ac.ae
+- Rawdha Hilal Al Aamri: Senior Administrative Officer – Alumni
+- Ali Hamad Alhuraiz: Senior Administrative Affairs Manager
+- Gir Bahadur Aryal: Admin Affairs Administrator | gir.aryal@mbrsg.ac.ae | +9714-3175609
+- Shuaib Kunnoth Kunnummal: Programmer | shuaib.kunnoth@mbrsg.ac.ae | +9714-3175640
+- Aisha Abdulla Alali: Excellence & Quality Manager
+- Marwah Mohamed Alantali: Senior Manager - Data and Impact Measurement
+- Lama Saleem Zakzak: Principal Researcher
+- Akmaral Orazaly: Principal Researcher
+- Yasmine Abosarry: Receptionist
+- Fatma Jassem Almarri: Senior Administrator Officer
+
+=== IT HELPDESK ===
+Email: ithelpdesk@mbrsg.ac.ae
+System: Infraon — https://mbrsg.infraon.app/auth/login
+Working hours: 7:30AM – 4:00PM (sometimes support available after hours)
+Team: Obaid (IT Manager), Anthony (IT Administrator), Bryan (IT Technician), Emmanuel (outsourced technician)
+Response times: Urgent = 5–10 minutes | Normal = 30 mins to 3 hours | Low = days depending on workload
+
+=== COMMON IT ISSUES & SOLUTIONS ===
+
+1. WIFI NOT WORKING / CAPTIVE PORTAL ISSUE
+Problem: Cannot connect to internet on MBRSG-STAFF network.
+Solution:
+Step 1: Disconnect from MBRSG-STAFF WiFi on your laptop.
+Step 2: Reconnect to MBRSG-STAFF — a captive portal page will open automatically in your browser.
+Step 3: Log in with your MBRSG email and password.
+Step 4: You will be redirected to the MBRSG website — you are now connected.
+If the captive portal does not open, open a browser and go to any website — it should redirect automatically.
+If still not working after these steps, email ithelpdesk@mbrsg.ac.ae.
+
+2. PASSWORD RESET (STAFF)
+Problem: Forgotten or expired Windows/Outlook password.
+Solution: Press Ctrl + Alt + Delete on your laptop, select "Change a password", enter your old password and set a new one. After changing, you must re-enter the new password in: Outlook, Microsoft Teams, OneDrive, and MBRSG-STAFF WiFi. If you cannot access Windows at all, call IT directly.
+
+3. STUDENT PASSWORD RESET / SSO ACCESS
+For academic staff (Registrar, faculty): Contact Bryan Cuenca (bryan.cuenca@mbrsg.ac.ae) with the student ID, username (format: S00XXXXXX@mbrsg.ac.ae) and LDAP ID. Default student password is $tudent@123.
+Note: A student self-service password reset system is being planned — contact IT for updates.
+
+4. GRP SYSTEM LOGIN ISSUES
+Problem: Cannot log into GRP / getting an error.
+Solution: Email ithelpdesk@mbrsg.ac.ae with a screenshot of the error. Anthony or Bryan will investigate.
+GRP is used for purchase requisitions, expense claims, travel requests, and finance processes.
+For GRP process guidance (how to submit a requisition, raise a request etc.), contact the Administrative Affairs team:
+- Ali Hamad Alhuraiz (Senior Administrative Affairs Manager): ali.alhuraiz@mbrsg.ac.ae
+- Fatma Jassem Almarri (Senior Administrator Officer): fatma.almarri@mbrsg.ac.ae
+- Gir Bahadur Aryal (Admin Affairs Administrator): gir.aryal@mbrsg.ac.ae
+
+5. GRP PURCHASE REQUISITION — STEP BY STEP
+URL: https://grp.dubai.gov.ae
+Step 1: Log in to GRP at grp.dubai.gov.ae with your credentials.
+Step 2: Click the 3 stripes (hamburger menu) at the top left to open the navigator. Select "Full Navigator". Alternatively if you have saved it, go to "iProcurement Home Page" from your favourites.
+Step 3: Click on "Non-Catalog Request".
+Step 4: Under Item Type, select "Goods and Services" (this is the standard choice for most requests).
+Step 5: Enter a clear description of what you need. Example: "Catering for weekend classes — Fall Semester 2025".
+Step 6: Enter the amount — always enter the amount WITHOUT tax (excluding VAT).
+Step 7: Enter the supplier name.
+Step 8: Before viewing the cart, you must select a Category. Click the search icon next to Category.
+Step 9: In the category search, select "Search by Description". IMPORTANT: All searches in GRP must start with % followed by your search term. Example: %Catering — then press Search.
+Step 10: Select the correct category from the results and click "Quick Add".
+Step 11: Click "View Cart and Checkout".
+Step 12: In the checkout screen, scroll down and add your attachment (quote, invoice, or supporting document). IMPORTANT: File names must not contain special characters (no /, \, *, ?, #, etc.).
+Step 13: Review all details and click "Submit".
+
+Notes:
+- Always get a quote from the supplier before submitting.
+- Amount must always be excluding VAT/tax.
+- Attachment filenames must be clean — no special characters or Arabic text in the filename.
+- For questions on GRP processes contact Ali Alhuraiz, Fatma Almarri, or Gir Aryal.
+
+6. GRP EXPENSE REIMBURSEMENT — STEP BY STEP
+URL: https://grp.dubai.gov.ae
+Step 1: Log in to GRP at grp.dubai.gov.ae.
+Step 2: Click the 3 stripes (hamburger menu) at the top left.
+Step 3: Click on "Expense Reimbursement".
+Step 4: Click "Create Expense Report" in the top right corner.
+Step 5: Under Expense Template, select "Staff Expense Claim".
+Step 6: Click Next.
+Step 7: In Line 1, fill in the following fields:
+   - Date (date of the expense/receipt)
+   - Receipt amount
+   - Expense type
+   - Justification (brief description of what the expense was for)
+Step 8: Click Next.
+Step 9: Click Next again to review and submit.
+
+Notes:
+- Keep your original receipts as supporting documents.
+- For questions contact Ali Alhuraiz, Fatma Almarri, or Gir Aryal.
+
+7. ANNUAL LEAVE APPLICATION — STEP BY STEP
+System: Smart Employee App (mobile app)
+Step 1: Open the Smart Employee App on your phone.
+Step 2: Go to the Services tab at the bottom (الخدمات in Arabic).
+Step 3: Tap on "Leaves" (الإجازات).
+Step 4: You will see your leave balance — showing Pending, and Taken days.
+Step 5: Tap "Apply for Leave" (تقديم طلب إجازة) at the bottom.
+Step 6: Choose your Leave Type from the list. Common types include:
+   - Annual Leave
+   - Sick Leave
+   - Emergency Leave
+   - Other types as applicable
+Step 7: Select the start and end dates of your leave.
+Step 8: Attachment and Remarks are optional — add if needed.
+Step 9: If required, you can also select:
+   - Advance Salary — if you need salary paid in advance before your leave
+   - Ticket Required — if you need a flight ticket as part of your leave entitlement
+Step 10: Submit the request.
+
+Notes:
+- Leave requests must be approved by your direct manager.
+- For leave balance queries or policy questions contact Sara Bin Jarsh (HR Manager): sara.binjarsh@mbrsg.ac.ae
+- For app technical issues contact ithelpdesk@mbrsg.ac.ae
+
+5. INTERNET BLOCKED / WEBSITE NOT ACCESSIBLE
+Solution: Email ithelpdesk@mbrsg.ac.ae requesting the website/domain to be whitelisted. IT will check and whitelist it first. If still blocked after whitelisting, IT escalates to RNS (our security SOC vendor) who investigate further.
+
+6. EMAIL DOMAIN WHITELISTING
+To receive emails from an external domain that is being blocked (e.g. a vendor or platform):
+Email ithelpdesk@mbrsg.ac.ae with the domain name and email address to whitelist.
+
+7. EXAM INTERNET ON/OFF REQUEST
+For faculty needing internet disabled during exams:
+Email ithelpdesk@mbrsg.ac.ae with: date, time to turn off, time to turn back on, location (City Walk or DWTC), and room name.
+
+8. NEW EMPLOYEE / NON-RESIDENT FELLOW SETUP
+HR sends IT an Excel sheet with: Employee code, name, designation, department, email, country, office location, monitor needed, laptop needed, extension, joining date, parking.
+IT then: Creates Active Directory account → Microsoft 365 email auto-created → Sets up laptop, monitor, keyboard, mouse, landline (full-time staff) → Grants Asana access → Sets up email signature via Letsignit → VPN access on request only.
+Device policy: New laptop issued after 3 years of service. Manager approval needed for exceptions.
+Hardware vendors: Goodwill, First Option, Bin Tamim.
+
+9. NEW STUDENT EMAIL CREATION
+Registrar (Kieran Ross) sends IT a list with student name, ID, program, home email, LDAP ID.
+Bryan creates the MBRSG student email account (format: S00XXXXXX@mbrsg.ac.ae).
+Default password: $tudent@123
+
+10. PRINTER NOT WORKING
+For printer issues (paper jam, error codes, not printing):
+Email ithelpdesk@mbrsg.ac.ae with the error code/description and printer location.
+Emmanuel (outsourced technician) handles physical printer repairs.
+DWTC printer: Konica Minolta C754 series.
+
+11. SOFTWARE / APPLICATION ACCESS REQUEST
+Email ithelpdesk@mbrsg.ac.ae with the application name and business reason.
+Manager approval may be required for some applications.
+
+12. LOCAL ADMIN ACCESS REQUEST
+Staff needing local admin access to install software must email ithelpdesk@mbrsg.ac.ae with justification. Approved by IT Manager.
+
+13. EMAIL NOT WORKING / LOCKED ACCOUNT
+Email ithelpdesk@mbrsg.ac.ae or call IT directly. Anthony or Bryan will unlock the account.
+
+14. WEEKEND CLASS IT SUPPORT
+For IT support during weekend teaching sessions at City Walk or DWTC:
+Email ithelpdesk@mbrsg.ac.ae or Kieran Ross coordinates IT support as part of class scheduling.
+
+15. EMPLOYEE EXIT / OFFBOARDING
+When an employee leaves: IT collects all IT equipment (laptop, phone, access card, peripherals). Obaid signs the exit paper confirming all IT assets have been returned.
+
+=== KEY SYSTEMS & URLS ===
+- IT Helpdesk (Infraon): https://mbrsg.infraon.app/auth/login
+- GRP (Finance/Procurement): Internal system — contact IT if login issues
+- Student Portal (Quercus): https://eu-quercus.elluciancloud.com/app/mbrsg/f?p=1202:LOGIN
+- Survey system (OneBlue Explorance): https://survey.mbrsg.ac.ae/blue
+- MBRSG Website: https://www.mbrsg.ae
+- Microsoft 365: https://portal.office.com
+- SharePoint/Intranet: Available via Microsoft 365 portal
+- Webmail: https://webmail.mbrsg.ac.ae/owa/
+
+=== CAMPUSES ===
+- City Walk Campus: AlSafa Rd, City Walk, Building B02, First Floor, Dubai (main campus)
+- DWTC Campus: Dubai World Trade Centre, Convention Tower (used for some classes)
+
+=== SECURITY CONTACTS ===
+- Security SOC Vendor: RNS Technology Services (for website blocking escalation, threat hunting, firewall issues)
+- Cloud Hosting: Moro Hub
+- Backup: Veeam
+- Endpoint Security: CrowdStrike Falcon EDR (deployed on all MBRSG devices)
+- Firewall: FortiGate
+
+=== RULES FOR RESPONSES ===
+1. When drafting emails: write the body only. Start with "Dear [Name]," end after closing line "Best regards,". No signature block, no phone numbers, no addresses, no disclaimers, no markdown. Plain text only.
+2. When explaining procedures: give clear numbered steps based on the knowledge above.
+3. Be direct and concise. No preamble, no fluff.
+4. Respond in the same language the user writes in (Arabic or English).
+5. For IT issues: direct to ithelpdesk@mbrsg.ac.ae or call Obaid/Anthony/Bryan directly for urgent matters.
+6. For HR: direct to Sara Bin Jarsh.
+7. For Finance: direct to Esam Dukhan or Salman Amin.
+8. If you don't know something specific to MBRSG, say so honestly rather than guessing.`;
+
+let conversationHistory = [];
+let isLoading = false;
+
+// Init directory
+function initDirectory() {
+  const grid = document.getElementById('directory-grid');
+  grid.innerHTML = EMPLOYEES.map(e => `
+    <div class="dir-card" onclick="goToChat('Write me a professional email to ${e.name}, ${e.title} at MBRSG, about ')">
+      <div class="dir-avatar">${getInitials(e.name)}</div>
+      <div>
+        <div class="dir-name">${e.name}</div>
+        <div class="dir-title">${e.title}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getInitials(name) {
+  return name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+}
+
+function filterDirectory(q) {
+  const grid = document.getElementById('directory-grid');
+  const filtered = EMPLOYEES.filter(e =>
+    e.name.toLowerCase().includes(q.toLowerCase()) ||
+    e.title.toLowerCase().includes(q.toLowerCase())
+  );
+  grid.innerHTML = filtered.map(e => `
+    <div class="dir-card" onclick="goToChat('Write me a professional email to ${e.name}, ${e.title} at MBRSG, about ')">
+      <div class="dir-avatar">${getInitials(e.name)}</div>
+      <div>
+        <div class="dir-name">${e.name}</div>
+        <div class="dir-title">${e.title}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function goToChat(prompt) {
+  // Switch to chat tab
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+  document.getElementById('panel-chat').classList.add('active');
+  // Set input
+  const input = document.getElementById('chat-input');
+  input.value = prompt;
+  input.focus();
+  autoResize(input);
+}
+
+function sendQuick(prompt) {
+  document.getElementById('chat-input').value = prompt;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addMessage(role, content) {
+  const messages = document.getElementById('chat-messages');
+  const time = new Date().toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = role === 'assistant' ? 'AI' : 'Me';
+  const formattedContent = content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <div class="msg-bubble">${formattedContent}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addTyping() {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+  div.innerHTML = `
+    <div class="msg-avatar">AI</div>
+    <div>
+      <div class="msg-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  isLoading = true;
+  input.value = '';
+  autoResize(input);
+  document.getElementById('send-btn').disabled = true;
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+  addTyping();
+
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    removeTyping();
+
+    if (data.error) {
+      addMessage('assistant', 'Sorry, I encountered an error: ' + data.error.message);
+    } else {
+      const reply = data.content[0].text;
+      addMessage('assistant', reply);
+      conversationHistory.push({ role: 'assistant', content: reply });
+      // Keep history to last 20 messages
+      if (conversationHistory.length > 20) {
+        conversationHistory = conversationHistory.slice(-20);
+      }
+    }
+  } catch(e) {
+    removeTyping();
+    addMessage('assistant', 'Connection error. Please check your network and try again.');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+initDirectory();
+
+// ===== AZURE SSO =====
+const msalConfig = {
+  auth: {
+    clientId: '79bf381a-b3c0-44d3-944f-f1749aafd094',
+    authority: 'https://login.microsoftonline.com/ad2ab9b1-209c-4d41-b70b-b430967d7f6f',
+    redirectUri: 'https://obaidasheer.github.io/mbrsg-claude-addin/mbrsg-portal.html',
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: false,
+  }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+const loginRequest = {
+  scopes: ['User.Read'],
+};
+
+async function initSSO() {
+  try {
+    // Handle redirect response first
+    const response = await msalInstance.handleRedirectPromise();
+    if (response) {
+      onSignedIn(response.account);
+      return;
+    }
+
+    // Check if already signed in
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      onSignedIn(accounts[0]);
+      return;
+    }
+
+    // Show login screen
+    document.getElementById('sso-screen').style.display = 'flex';
+  } catch (e) {
+    console.error('SSO init error:', e);
+    document.getElementById('sso-screen').style.display = 'flex';
+  }
+}
+
+async function signIn() {
+  const btn = document.getElementById('sso-btn');
+  btn.innerHTML = '<span style="opacity:0.7">Signing in...</span>';
+  btn.disabled = true;
+  try {
+    await msalInstance.loginRedirect(loginRequest);
+  } catch (e) {
+    const err = document.getElementById('sso-error');
+    err.style.display = 'block';
+    err.textContent = 'Sign in failed. Please try again or contact IT.';
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg> Sign in with Microsoft`;
+    btn.disabled = false;
+  }
+}
+
+function onSignedIn(account) {
+  // Hide login screen
+  document.getElementById('sso-screen').style.display = 'none';
+
+  // Update header with user name
+  const name = account.name || account.username;
+  const initials = name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+  document.getElementById('status-badge').innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${initials}</span>
+      ${name.split(' ')[0]}
+      <span style="cursor:pointer;opacity:0.7;font-size:10px;" onclick="signOut()">Sign out</span>
+    </span>
+  `;
+}
+
+function signOut() {
+  msalInstance.logoutRedirect({
+    postLogoutRedirectUri: 'https://obaidasheer.github.io/mbrsg-claude-addin/mbrsg-portal.html'
+  });
+}
+
+// Initialize SSO on load
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof msal !== 'undefined') {
+    initSSO();
+  } else {
+    // MSAL not loaded yet, wait
+    setTimeout(initSSO, 500);
+  }
+});
+// ===== END SSO =====
+
+</script>
+</body>
+</html>
