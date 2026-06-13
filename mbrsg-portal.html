@@ -1287,21 +1287,35 @@ initDirectory();
 // ===== DOCUMENT GENERATION =====
 const DOC_KEYWORDS = [
   'create', 'write', 'draft', 'generate', 'make', 'prepare', 'compose',
-  'أنشئ', 'اكتب', 'صيغ', 'اعداد', 'أعد'
+  'produce', 'draw up', 'put together', 'format',
+  'أنشئ', 'اكتب', 'صيغ', 'اعداد', 'أعد', 'قم بإعداد'
 ];
 
 const DOC_TYPES = [
   'letter', 'report', 'memo', 'form', 'document', 'certificate', 'agenda',
   'proposal', 'contract', 'invoice', 'email', 'notice', 'announcement',
+  'minutes', 'meeting', 'template', 'policy', 'procedure', 'guidelines',
+  'summary', 'brief', 'plan', 'schedule', 'checklist', 'nda', 'agreement',
+  'presentation', 'outline', 'request', 'application', 'complaint',
   'رسالة', 'تقرير', 'مذكرة', 'نموذج', 'وثيقة', 'شهادة', 'جدول أعمال',
-  'مقترح', 'عقد', 'فاتورة', 'إشعار', 'إعلان'
+  'مقترح', 'عقد', 'فاتورة', 'إشعار', 'إعلان', 'محضر', 'اجتماع'
 ];
 
 function isDocumentRequest(text) {
   const lower = text.toLowerCase();
+  // Check for explicit document creation keywords + type
   const hasKeyword = DOC_KEYWORDS.some(k => lower.includes(k));
   const hasDocType = DOC_TYPES.some(t => lower.includes(t));
-  return hasKeyword && hasDocType;
+  if (hasKeyword && hasDocType) return true;
+  // Also catch patterns like "minutes of meeting", "X document", "X letter"
+  const docPatterns = [
+    /minutes of/i, /meeting minutes/i, /document/i, /letter/i,
+    /report/i, /memo/i, /template/i, /form/i,
+    /agenda/i, /proposal/i, /policy/i, /certificate/i,
+    /محضر اجتماع/i, /وثيقة/i, /نموذج/i
+  ];
+  const hasPattern = docPatterns.some(p => p.test(text));
+  return hasKeyword && hasPattern;
 }
 
 function detectLanguage(text) {
