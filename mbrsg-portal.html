@@ -436,6 +436,54 @@ body {
 .welcome-text h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
 .welcome-text p { font-size: 13px; color: rgba(255,255,255,0.7); }
 
+/* Document Preview */
+.doc-preview-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.doc-preview-panel {
+  background: white; border-radius: 12px; width: 100%; max-width: 800px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.doc-preview-header {
+  padding: 16px 20px; background: var(--navy); border-radius: 12px 12px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.doc-preview-title { color: white; font-size: 14px; font-weight: 600; }
+.doc-preview-actions { display: flex; gap: 8px; }
+.doc-btn {
+  padding: 7px 14px; border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s;
+}
+.doc-btn:hover { opacity: 0.85; }
+.doc-btn-word { background: #2b579a; color: white; }
+.doc-btn-pdf { background: #e74c3c; color: white; }
+.doc-btn-excel { background: #1e7145; color: white; }
+.doc-btn-copy { background: rgba(255,255,255,0.2); color: white; }
+.doc-btn-close { background: rgba(255,255,255,0.1); color: white; }
+.doc-preview-body {
+  flex: 1; overflow-y: auto; padding: 40px;
+  font-family: "Times New Roman", serif; font-size: 13px;
+  line-height: 1.8; color: #1a1a1a;
+  background: #f9f9f9;
+}
+.doc-page {
+  background: white; max-width: 680px; margin: 0 auto;
+  padding: 60px 70px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  min-height: 900px;
+}
+.doc-page.rtl { direction: rtl; font-family: "Arial", sans-serif; }
+.doc-page h1 { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+.doc-page h2 { font-size: 14px; font-weight: bold; margin: 16px 0 8px; }
+.doc-page p { margin-bottom: 12px; }
+.doc-page .doc-date { text-align: right; margin-bottom: 20px; }
+.doc-page .doc-sig { margin-top: 40px; }
+.doc-type-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
 @media (max-width: 768px) {
   .chat-layout { grid-template-columns: 1fr; height: auto; }
   .chat-window { height: 60vh; }
@@ -445,6 +493,9 @@ body {
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1152,13 +1203,23 @@ async function sendMessage() {
   addTyping();
 
   try {
+    const isDocReq = isDocumentRequest(text);
+    const docSystemAddition = isDocReq ? `
+
+IMPORTANT: The user is requesting a document. Generate a complete, professional, well-formatted document. 
+- Use proper document structure with date, subject, body, and closing
+- Use ** for bold headings
+- Use # for main title, ## for section headings
+- Make it ready to download — no explanations, just the document content
+- If Arabic was used, write the full document in Arabic` : '';
+
     const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1000,
-        system: SYSTEM_PROMPT,
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT + docSystemAddition,
         messages: conversationHistory
       })
     });
@@ -1170,9 +1231,43 @@ async function sendMessage() {
       addMessage('assistant', 'Sorry, I encountered an error: ' + data.error.message);
     } else {
       const reply = data.content[0].text;
-      addMessage('assistant', reply);
+      const lang = detectLanguage(text + reply);
+      
+      if (isDocReq) {
+        // Extract title from first line
+        const firstLine = reply.split('
+')[0].replace(/^#+\s/, '').replace(/\*\*/g, '').trim();
+        const title = firstLine.length < 60 ? firstLine : 'MBRSG Document';
+        
+        // Add message with document preview button
+        const messages = document.getElementById('chat-messages');
+        const time = new Date().toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
+        const div = document.createElement('div');
+        div.className = 'msg assistant';
+        div.innerHTML = \`
+          <div class="msg-avatar">AI</div>
+          <div>
+            <div class="msg-bubble">
+              📄 Document ready: <strong>\${title}</strong><br><br>
+              <div class="doc-type-btns" style="margin-top:8px;">
+                <button class="doc-btn doc-btn-word" onclick="showDocumentPreview(\${JSON.stringify(reply).replace(/'/g, "\\'")} , '\${title.replace(/'/g, "\\'")}', '\${lang}'); downloadWord();">⬇ Word</button>
+                <button class="doc-btn doc-btn-pdf" onclick="showDocumentPreview(\${JSON.stringify(reply).replace(/'/g, "\\'")} , '\${title.replace(/'/g, "\\'")}', '\${lang}'); downloadPDF();">⬇ PDF</button>
+                <button class="doc-btn doc-btn-copy" style="background:#002f6d;" onclick="showDocumentPreview(\${JSON.stringify(reply).replace(/'/g, "\\'")} , '\${title.replace(/'/g, "\\'")}', '\${lang}');">👁 Preview</button>
+              </div>
+            </div>
+            <div class="msg-time">\${time}</div>
+          </div>
+        \`;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        
+        // Auto show preview
+        showDocumentPreview(reply, title, lang);
+      } else {
+        addMessage('assistant', reply);
+      }
+      
       conversationHistory.push({ role: 'assistant', content: reply });
-      // Keep history to last 20 messages
       if (conversationHistory.length > 20) {
         conversationHistory = conversationHistory.slice(-20);
       }
@@ -1188,6 +1283,189 @@ async function sendMessage() {
 }
 
 initDirectory();
+
+// ===== DOCUMENT GENERATION =====
+const DOC_KEYWORDS = [
+  'create', 'write', 'draft', 'generate', 'make', 'prepare', 'compose',
+  'أنشئ', 'اكتب', 'صيغ', 'اعداد', 'أعد'
+];
+
+const DOC_TYPES = [
+  'letter', 'report', 'memo', 'form', 'document', 'certificate', 'agenda',
+  'proposal', 'contract', 'invoice', 'email', 'notice', 'announcement',
+  'رسالة', 'تقرير', 'مذكرة', 'نموذج', 'وثيقة', 'شهادة', 'جدول أعمال',
+  'مقترح', 'عقد', 'فاتورة', 'إشعار', 'إعلان'
+];
+
+function isDocumentRequest(text) {
+  const lower = text.toLowerCase();
+  const hasKeyword = DOC_KEYWORDS.some(k => lower.includes(k));
+  const hasDocType = DOC_TYPES.some(t => lower.includes(t));
+  return hasKeyword && hasDocType;
+}
+
+function detectLanguage(text) {
+  const arabicPattern = /[؀-ۿ]/;
+  return arabicPattern.test(text) ? 'ar' : 'en';
+}
+
+function showDocumentPreview(content, title, lang) {
+  // Remove existing preview
+  const existing = document.getElementById('doc-preview-overlay');
+  if (existing) existing.remove();
+
+  const isRTL = lang === 'ar';
+  const today = new Date().toLocaleDateString(isRTL ? 'ar-AE' : 'en-AE', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  // Format content as HTML
+  const formatted = content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^# (.*)/gm, '<h1>$1</h1>')
+    .replace(/^## (.*)/gm, '<h2>$1</h2>')
+    .replace(/^### (.*)/gm, '<h3>$1</h3>')
+    .replace(/
+
+/g, '</p><p>')
+    .replace(/
+/g, '<br>');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'doc-preview-overlay';
+  overlay.className = 'doc-preview-overlay';
+  overlay.innerHTML = `
+    <div class="doc-preview-panel">
+      <div class="doc-preview-header">
+        <div class="doc-preview-title">📄 ${title || (isRTL ? 'معاينة المستند' : 'Document Preview')}</div>
+        <div class="doc-preview-actions">
+          <button class="doc-btn doc-btn-copy" onclick="copyDocContent()">${isRTL ? 'نسخ' : 'Copy'}</button>
+          <button class="doc-btn doc-btn-word" onclick="downloadWord()">⬇ Word</button>
+          <button class="doc-btn doc-btn-pdf" onclick="downloadPDF()">⬇ PDF</button>
+          <button class="doc-btn doc-btn-close" onclick="closeDocPreview()">✕</button>
+        </div>
+      </div>
+      <div class="doc-preview-body">
+        <div class="doc-page ${isRTL ? 'rtl' : ''}" id="doc-page-content">
+          <p class="doc-date">${today}</p>
+          <p>${formatted}</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  
+  // Store content for downloads
+  window._currentDoc = { content, title, lang };
+}
+
+function closeDocPreview() {
+  const el = document.getElementById('doc-preview-overlay');
+  if (el) el.remove();
+}
+
+function copyDocContent() {
+  if (window._currentDoc) {
+    navigator.clipboard.writeText(window._currentDoc.content).then(() => {
+      const btn = document.querySelector('.doc-btn-copy');
+      if (btn) { btn.textContent = '✓'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+    });
+  }
+}
+
+async function downloadWord() {
+  if (!window._currentDoc) return;
+  const { content, title, lang } = window._currentDoc;
+  const isRTL = lang === 'ar';
+  
+  try {
+    const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } = docx;
+    
+    const paragraphs = content.split('
+').filter(p => p.trim()).map(line => {
+      const isBold = line.startsWith('**') && line.endsWith('**');
+      const isH1 = line.startsWith('# ');
+      const isH2 = line.startsWith('## ');
+      const text = line.replace(/^#+\s/, '').replace(/\*\*/g, '');
+      
+      if (isH1) return new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text, bold: true, size: 28 })] });
+      if (isH2) return new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text, bold: true, size: 24 })] });
+      return new Paragraph({
+        alignment: isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+        children: [new TextRun({ text, size: 22, bold: isBold })]
+      });
+    });
+
+    const doc = new Document({
+      sections: [{ children: paragraphs }]
+    });
+
+    const buffer = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(buffer);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (title || 'MBRSG_Document') + '.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert('Word download error: ' + e.message);
+  }
+}
+
+async function downloadPDF() {
+  if (!window._currentDoc) return;
+  const { content, title, lang } = window._currentDoc;
+  const isRTL = lang === 'ar';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    
+    doc.setFont('helvetica');
+    doc.setFontSize(11);
+    
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    let y = 30;
+
+    // Title
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title || 'MBRSG Document', margin, y);
+    y += 10;
+
+    // Date
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const today = new Date().toLocaleDateString('en-AE');
+    doc.text(today, doc.internal.pageSize.getWidth() - margin - doc.getTextWidth(today), y);
+    y += 10;
+
+    // Content
+    doc.setFontSize(11);
+    const lines = content.replace(/\*\*/g, '').replace(/^#+\s/gm, '').split('
+');
+    
+    for (const line of lines) {
+      if (!line.trim()) { y += 5; continue; }
+      const wrapped = doc.splitTextToSize(line, pageWidth);
+      
+      if (y + wrapped.length * 6 > doc.internal.pageSize.getHeight() - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      doc.text(wrapped, margin, y);
+      y += wrapped.length * 6 + 2;
+    }
+
+    doc.save((title || 'MBRSG_Document') + '.pdf');
+  } catch(e) {
+    alert('PDF download error: ' + e.message);
+  }
+}
+// ===== END DOCUMENT GENERATION =====
 
 // ===== AZURE SSO =====
 const msalConfig = {
@@ -1247,37 +1525,69 @@ async function signIn() {
   }
 }
 
-function onSignedIn(account) {
-  // Hide login screen
-  document.getElementById('sso-screen').style.display = 'none';
+const SESSION_TIMEOUT = 30 * 60 * 1000;
+let sessionTimer = null;
+let warningTimer = null;
 
-  // Update header with user name
+function resetSessionTimer() {
+  clearTimeout(sessionTimer);
+  clearTimeout(warningTimer);
+  warningTimer = setTimeout(showSessionWarning, 25 * 60 * 1000);
+  sessionTimer = setTimeout(autoLogout, SESSION_TIMEOUT);
+}
+
+function showSessionWarning() {
+  if (document.getElementById('session-warning')) return;
+  const warning = document.createElement('div');
+  warning.id = 'session-warning';
+  warning.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9998;background:#002f6d;color:white;padding:16px 20px;border-radius:10px;font-family:Segoe UI,sans-serif;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.3);display:flex;align-items:center;gap:12px;max-width:320px;';
+  warning.innerHTML = '<span>⚠️</span><div><div style="font-weight:600;margin-bottom:4px;">Session expiring soon</div><div style="opacity:0.8;font-size:12px;">You will be signed out in 5 minutes due to inactivity.</div></div><button onclick="dismissWarning()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;">Stay signed in</button>';
+  document.body.appendChild(warning);
+}
+
+function dismissWarning() {
+  const w = document.getElementById('session-warning');
+  if (w) w.remove();
+  resetSessionTimer();
+}
+
+function autoLogout() {
+  const w = document.getElementById('session-warning');
+  if (w) w.remove();
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,47,109,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Segoe UI,sans-serif;color:white;text-align:center;';
+  msg.innerHTML = '<div><div style="font-size:40px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:600;margin-bottom:8px;">Session expired</div><div style="opacity:0.7;margin-bottom:20px;">Signed out due to inactivity.</div><button onclick="location.reload()" style="background:white;color:#002f6d;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Sign in again</button></div>';
+  document.body.appendChild(msg);
+  msalInstance.clearCache();
+}
+
+function onSignedIn(account) {
+  document.getElementById('sso-screen').style.display = 'none';
   const name = account.name || account.username;
   const initials = name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
   document.getElementById('status-badge').innerHTML = `
     <span style="display:flex;align-items:center;gap:6px;">
-      <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${initials}</span>
-      ${name.split(' ')[0]}
-      <span style="cursor:pointer;opacity:0.7;font-size:10px;" onclick="signOut()">Sign out</span>
+      <span style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${initials}</span>
+      <span>${name.split(' ')[0]}</span>
+      <span style="cursor:pointer;opacity:0.6;font-size:10px;padding:2px 8px;border:1px solid rgba(255,255,255,0.3);border-radius:10px;" onclick="signOut()">Sign out</span>
     </span>
   `;
+  resetSessionTimer();
+  ['click','keypress','mousemove','touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetSessionTimer, { passive: true });
+  });
 }
 
 function signOut() {
+  clearTimeout(sessionTimer);
+  clearTimeout(warningTimer);
   msalInstance.logoutRedirect({
     postLogoutRedirectUri: 'https://obaidasheer.github.io/mbrsg-claude-addin/mbrsg-portal.html'
   });
 }
 
 // Initialize SSO on load
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof msal !== 'undefined') {
-    initSSO();
-  } else {
-    // MSAL not loaded yet, wait
-    setTimeout(initSSO, 500);
-  }
-});
+initSSO();
 // ===== END SSO =====
 
 </script>
