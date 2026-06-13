@@ -1,60 +1,45 @@
-const http = require('http');
+const express = require('express');
 const https = require('https');
+const app = express();
 
-const PORT = process.env.PORT || 8080;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-const server = http.createServer((req, res) => {
+app.use(express.json());
+app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
+app.post('/', (req, res) => {
+  const body = JSON.stringify(req.body);
+  const options = {
+    hostname: 'api.anthropic.com',
+    path: '/v1/messages',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'Content-Length': Buffer.byteLength(body)
+    }
+  };
 
-  if (req.method !== 'POST') {
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: { message: 'Method not allowed' } }));
-    return;
-  }
-
-  let body = '';
-  req.on('data', chunk => body += chunk);
-  req.on('end', () => {
-    const options = {
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Length': Buffer.byteLength(body)
-      }
-    };
-
-    const proxyReq = https.request(options, (proxyRes) => {
-      let data = '';
-      proxyRes.on('data', chunk => data += chunk);
-      proxyRes.on('end', () => {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(data);
-      });
+  const proxyReq = https.request(options, (proxyRes) => {
+    let data = '';
+    proxyRes.on('data', chunk => data += chunk);
+    proxyRes.on('end', () => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(data);
     });
-
-    proxyReq.on('error', (e) => {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: { message: e.message } }));
-    });
-
-    proxyReq.write(body);
-    proxyReq.end();
   });
+
+  proxyReq.on('error', (e) => res.status(500).json({ error: { message: e.message } }));
+  proxyReq.write(body);
+  proxyReq.end();
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`MBRSG Claude Proxy running on port ${PORT}`);
-});
+app.get('/', (req, res) => res.json({ status: 'MBRSG Claude Proxy running' }));
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => console.log(`Running on port ${PORT}`));
